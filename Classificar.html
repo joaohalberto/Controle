@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+  <title>Classificar lançamentos</title>
+
+  <!-- Supabase JS via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root { --bg:#0b1220; --card:#0f1b33; --bd:rgba(255,255,255,.10); --tx:#eef2ff; --mut:rgba(238,242,255,.70); }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;background:linear-gradient(180deg,#0b1220,#0a1020);color:var(--tx)}
+    header{position:sticky;top:0;z-index:10;background:rgba(11,18,32,.85);backdrop-filter: blur(10px);border-bottom:1px solid var(--bd)}
+    .wrap{max-width:720px;margin:0 auto;padding:14px}
+    h1{margin:0;font-size:16px;letter-spacing:.2px}
+    .sub{margin-top:6px;color:var(--mut);font-size:12px}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--bd);border-radius:999px;font-size:12px;color:var(--mut)}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-top:10px}
+    .btn{border:1px solid var(--bd);background:rgba(255,255,255,.06);color:var(--tx);padding:10px 12px;border-radius:12px;cursor:pointer}
+    .btn:active{transform:translateY(1px)}
+    .card{background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:18px;padding:12px}
+    input,select,button{font:inherit}
+    input,select{
+      width:100%;padding:12px;border-radius:14px;border:1px solid var(--bd);
+      background:rgba(255,255,255,.06);color:var(--tx);outline:none
+    }
+    label{display:block;color:var(--mut);font-size:12px;margin:0 0 8px}
+    .grid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:12px}
+    .item{background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:18px;padding:12px}
+    .top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+    .meta{color:var(--mut);font-size:12px}
+    .desc{margin-top:6px;font-size:14px;line-height:1.25}
+    .amt{font-weight:800;font-size:16px}
+    .amt.in{color:#86efac}
+    .amt.out{color:#fda4af}
+    .actions{display:grid;grid-template-columns: 1fr 110px; gap:10px; margin-top:10px}
+    .save{background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.35)}
+    .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.15);display:none}
+    .login{display:grid;gap:10px;margin-top:12px}
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Classificar lançamentos</h1>
+    <div class="sub">Apenas itens com categoria <b>A classificar</b>. Atualiza o app principal.</div>
+
+    <div class="row">
+      <span class="pill"><span id="count">0</span> pendente(s)</span>
+      <div style="display:flex;gap:10px">
+        <button class="btn" id="reloadBtn" type="button">Atualizar</button>
+        <button class="btn" id="logoutBtn" type="button" style="display:none">Sair</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="card" id="loginCard">
+    <div style="font-weight:700">Entrar</div>
+    <div class="sub">Use o mesmo login do app (login compartilhado).</div>
+
+    <div class="login">
+      <div>
+        <label>E-mail</label>
+        <input id="email" type="email" placeholder="email" autocomplete="username" />
+      </div>
+      <div>
+        <label>Senha</label>
+        <input id="password" type="password" placeholder="senha" autocomplete="current-password" />
+      </div>
+      <button class="btn save" id="loginBtn" type="button">Entrar</button>
+    </div>
+  </div>
+
+  <div class="grid" id="list"></div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ====== CONFIGURE AQUI ======
+  const SUPABASE_URL = "COLE_AQUI";
+  const SUPABASE_ANON_KEY = "COLE_AQUI";
+
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const $ = (id) => document.getElementById(id);
+
+  function toast(msg) {
+    const el = $("toast");
+    el.textContent = msg;
+    el.style.display = "block";
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => (el.style.display = "none"), 1800);
+  }
+
+  function brl(n) {
+    const v = Number(n || 0);
+    return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  }
+
+  function escapeHtml(s) {
+    return (s || "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  }
+  function escapeAttr(s) { return escapeHtml(s).replaceAll('"','&quot;'); }
+
+  async function getOwnerId() {
+    const { data: { user } } = await supabase.auth.getUser();
+    return user ? user.id : null; // login compartilhado = owner é o próprio uid
+  }
+
+  async function fetchCategories(ownerId) {
+    const { data, error } = await supabase
+      .from("categories")
+      .select("name")
+      .eq("owner_user_id", ownerId)
+      .order("name", { ascending: true });
+
+    if (error) throw error;
+
+    const names = (data || []).map(x => x.name);
+    const fixed = "A classificar";
+    const rest = names.filter(n => n !== fixed);
+    return [fixed, ...rest];
+  }
+
+  async function fetchToClassify(ownerId) {
+    const { data, error } = await supabase
+      .from("entries")
+      .select("id,date,competence_month,description,type,amount,category")
+      .eq("owner_user_id", ownerId)
+      .ilike("category", "a classificar")
+      .order("date", { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  function renderItem(e, categories) {
+    const div = document.createElement("div");
+    div.className = "item";
+
+    const amtClass = e.type === "entrada" ? "in" : "out";
+    const sign = e.type === "entrada" ? "+" : "-";
+
+    div.innerHTML = `
+      <div class="top">
+        <div>
+          <div class="meta">${e.date} · competência ${e.competence_month}</div>
+          <div class="desc">${escapeHtml(e.description)}</div>
+        </div>
+        <div class="amt ${amtClass}">${sign}${brl(e.amount)}</div>
+      </div>
+
+      <div class="actions">
+        <div>
+          <label>Nova categoria</label>
+          <select data-sel="${e.id}">
+            ${categories.map(c => `<option value="${escapeAttr(c)}">${escapeHtml(c)}</option>`).join("")}
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;justify-content:flex-end">
+          <button class="btn save" data-save="${e.id}" type="button">Salvar</button>
+        </div>
+      </div>
+    `;
+    return div;
+  }
+
+  async function refresh() {
+    const ownerId = await getOwnerId();
+    if (!ownerId) {
+      $("loginCard").style.display = "block";
+      $("logoutBtn").style.display = "none";
+      $("list").innerHTML = "";
+      $("count").textContent = "0";
+      return;
+    }
+
+    $("loginCard").style.display = "none";
+    $("logoutBtn").style.display = "inline-block";
+
+    const categories = await fetchCategories(ownerId);
+    const rows = await fetchToClassify(ownerId);
+
+    $("count").textContent = String(rows.length);
+
+    const list = $("list");
+    list.innerHTML = "";
+
+    if (!rows.length) {
+      list.innerHTML = `<div class="card"><div style="font-weight:700">Tudo classificado 🎉</div><div class="sub">Nenhum lançamento pendente.</div></div>`;
+      return;
+    }
+
+    for (const e of rows) {
+      list.appendChild(renderItem(e, categories));
+    }
+
+    list.querySelectorAll("[data-save]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-save");
+        const sel = list.querySelector(`[data-sel="${id}"]`);
+        const newCat = sel.value;
+
+        btn.disabled = true;
+        btn.textContent = "Salvando...";
+
+        const { error } = await supabase
+          .from("entries")
+          .update({ category: newCat })
+          .eq("id", id)
+          .eq("owner_user_id", ownerId);
+
+        btn.disabled = false;
+        btn.textContent = "Salvar";
+
+        if (error) {
+          console.error(error);
+          toast("Erro ao salvar");
+          return;
+        }
+
+        toast("Classificado!");
+        btn.closest(".item").remove();
+        $("count").textContent = String(Number($("count").textContent) - 1);
+      });
+    });
+  }
+
+  // ====== AUTH ======
+  $("loginBtn").addEventListener("click", async () => {
+    const email = $("email").value.trim();
+    const password = $("password").value;
+
+    if (!email || !password) return toast("Informe e-mail e senha.");
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      console.error(error);
+      toast("Falha no login");
+      return;
+    }
+    toast("Login ok");
+    refresh();
+  });
+
+  $("logoutBtn").addEventListener("click", async () => {
+    await supabase.auth.signOut();
+    toast("Saiu");
+    refresh();
+  });
+
+  $("reloadBtn").addEventListener("click", refresh);
+
+  supabase.auth.onAuthStateChange(() => refresh());
+
+  refresh();
+</script>
+</body>
+</html>

@@ -1,0 +1,1304 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Controle de Despesas (Pessoal)</title>
+
+  <!-- Supabase JS (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root { --bd:#e5e7eb; --tx:#111827; --mut:#6b7280; --bg:#f9fafb; --card:#ffffff; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;color:var(--tx);background:var(--bg)}
+    header{padding:18px 16px;border-bottom:1px solid var(--bd);background:#fff;position:sticky;top:0;z-index:5}
+    header h1{margin:0;font-size:18px}
+    main{max-width:1200px;margin:0 auto;padding:16px;display:grid;gap:16px;grid-template-columns: 420px 1fr}
+    @media (max-width: 980px){ main{grid-template-columns:1fr} header{position:static} }
+    .card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px}
+    .row{display:grid;grid-template-columns: 1fr 1fr;gap:10px}
+    label{display:block;font-size:12px;color:var(--mut);margin:0 0 6px}
+    input,select,button,textarea{
+      width:100%;padding:10px 10px;border:1px solid var(--bd);border-radius:10px;background:#fff;
+      font-size:14px;outline:none
+    }
+    input:focus,select:focus,textarea:focus{border-color:#93c5fd;box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+    textarea{min-height:64px;resize:vertical}
+    .btn{cursor:pointer;border:1px solid #1f2937;background:#111827;color:#fff}
+    .btn:hover{filter:brightness(1.05)}
+    .btn2{cursor:pointer;border:1px solid var(--bd);background:#fff}
+    .btn2:hover{background:#f3f4f6}
+    .btnDanger{cursor:pointer;border:1px solid #ef4444;background:#fff;color:#ef4444}
+    .btnDanger:hover{background:#fee2e2}
+    .actions{display:flex;gap:10px;flex-wrap:wrap}
+    .actions > *{flex:1}
+    .muted{color:var(--mut);font-size:12px}
+    .kpis{display:grid;grid-template-columns: repeat(3, 1fr);gap:10px}
+    .kpi{border:1px dashed var(--bd);border-radius:12px;padding:10px}
+    .kpi .t{font-size:12px;color:var(--mut);margin-bottom:6px}
+    .kpi .v{font-size:18px;font-weight:700}
+    table{width:100%;border-collapse:collapse}
+    th,td{border-bottom:1px solid var(--bd);padding:10px 8px;text-align:left;font-size:13px;vertical-align:top}
+    th{font-size:12px;color:var(--mut);font-weight:600}
+    .pill{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid var(--bd);font-size:12px}
+    .in{background:#ecfdf5;border-color:#a7f3d0;color:#065f46}
+    .out{background:#fff1f2;border-color:#fecdd3;color:#9f1239}
+    .right{text-align:right}
+    .grid3{display:grid;grid-template-columns: 1fr 1fr 1fr;gap:10px}
+    @media (max-width: 520px){ .row,.grid3{grid-template-columns:1fr} .kpis{grid-template-columns:1fr} }
+    details summary{cursor:pointer;color:#111827;font-weight:600}
+    .small{font-size:12px}
+    .wrap{white-space:normal;word-break:break-word}
+    .topbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+    .topbar .left{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .topbar .left input,.topbar .left select{width:auto;min-width:180px}
+    .topbar .right{display:flex;gap:10px;flex-wrap:wrap}
+
+    /* Dashboard mensal */
+    .dashboardGrid{display:grid;grid-template-columns: 1fr;gap:10px;margin-top:8px}
+    .dashboardCard{border:1px solid var(--bd);border-radius:14px;padding:12px;background:#fff}
+    .dashboardTitle{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+    .dashboardTitle h3{margin:0;font-size:14px}
+    .dashboardTitle .meta{font-size:12px;color:var(--mut)}
+    .bigMoney{font-size:22px;font-weight:800;margin-top:8px}
+    .catList{margin:8px 0 0;padding:0;list-style:none}
+    .catRow{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px dashed var(--bd)}
+    .catRow:last-child{border-bottom:none}
+    .catName{color:var(--tx)}
+    .catVal{font-weight:700}
+    .badge{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid var(--bd);font-size:12px}
+    .badgeIn{background:#ecfdf5;border-color:#a7f3d0;color:#065f46}
+    .badgeOut{background:#fff1f2;border-color:#fecdd3;color:#9f1239}
+    .badgeRes{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8}
+
+    /* Login */
+    .loginWrap{max-width:1200px;margin:0 auto;padding:16px}
+    .loginGrid{display:grid;gap:10px;grid-template-columns:1fr 1fr}
+    @media (max-width: 720px){ .loginGrid{grid-template-columns:1fr} }
+    .toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.15);display:none;z-index:50}
+    .headerRight{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .headerPill{border:1px solid var(--bd);border-radius:999px;padding:6px 10px;font-size:12px;color:var(--mut)}
+  </style>
+</head>
+
+<body>
+<header>
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:1200px;margin:0 auto">
+    <h1>Controle de Despesas (Pessoal)</h1>
+    <div class="headerRight">
+      <span class="headerPill" id="userInfo">Desconectado</span>
+      <button class="btn2" id="syncBtn" type="button" disabled>Sincronizar</button>
+      <button class="btn2" id="logoutBtn" type="button" disabled>Sair</button>
+    </div>
+  </div>
+</header>
+
+<div class="loginWrap" id="loginSection">
+  <section class="card">
+    <h2 style="margin:0 0 10px;font-size:16px;">Entrar</h2>
+    <div class="muted" style="margin-bottom:10px">
+      Use o mesmo login que sua esposa usará no celular (login compartilhado).
+    </div>
+    <div class="loginGrid">
+      <div>
+        <label for="loginEmail">E-mail</label>
+        <input id="loginEmail" type="email" placeholder="email" autocomplete="username" />
+      </div>
+      <div>
+        <label for="loginPass">Senha</label>
+        <input id="loginPass" type="password" placeholder="senha" autocomplete="current-password" />
+      </div>
+    </div>
+    <div class="actions" style="margin-top:12px">
+      <button class="btn" id="loginBtn" type="button">Entrar</button>
+      <button class="btn2" id="openMobileBtn" type="button">Abrir link da tela mobile</button>
+    </div>
+    <div class="muted" style="margin-top:10px">
+      Dica: hospede este arquivo e o <b>classificar.html</b> juntos. Sua esposa acessa pelo celular o link direto.
+    </div>
+  </section>
+</div>
+
+<main id="appMain" style="display:none">
+  <!-- Coluna esquerda -->
+  <section class="card">
+    <h2 style="margin:0 0 10px;font-size:16px;">Novo lançamento</h2>
+
+    <div class="row">
+      <div>
+        <label for="dt">Data do lançamento</label>
+        <input id="dt" type="date" />
+      </div>
+      <div>
+        <label for="comp">Mês de competência</label>
+        <input id="comp" type="month" />
+      </div>
+    </div>
+
+    <div style="margin-top:10px">
+      <label for="desc">Descrição</label>
+      <input id="desc" type="text" placeholder="Ex.: Mercado, gasolina, salário..." />
+    </div>
+
+    <div class="row" style="margin-top:10px">
+      <div>
+        <label for="tipo">Tipo</label>
+        <select id="tipo">
+          <option value="entrada">Entrada</option>
+          <option value="saida">Saída</option>
+        </select>
+      </div>
+      <div>
+        <label for="valor">Valor (R$)</label>
+        <input id="valor" type="number" step="0.01" min="0" placeholder="0,00" />
+      </div>
+    </div>
+
+    <div style="margin-top:10px">
+      <label for="cat">Categoria</label>
+      <select id="cat"></select>
+      <div class="muted" style="margin-top:6px">Dica: use “A classificar” quando ainda não souber.</div>
+    </div>
+
+    <div class="actions" style="margin-top:12px">
+      <button class="btn" id="addBtn">Adicionar</button>
+      <button class="btn2" id="clearFormBtn" type="button">Limpar</button>
+    </div>
+
+    <hr style="border:none;border-top:1px solid var(--bd);margin:14px 0">
+
+    <details>
+      <summary>Gerenciar categorias</summary>
+      <div style="margin-top:10px">
+        <label for="newCat">Nova categoria</label>
+        <input id="newCat" type="text" placeholder="Digite o nome da categoria" />
+      </div>
+      <div class="actions" style="margin-top:10px">
+        <button class="btn2" id="addCatBtn" type="button">Cadastrar categoria</button>
+        <button class="btnDanger" id="resetCatsBtn" type="button" title="Restaura a lista padrão e remove categorias adicionadas">Restaurar padrão</button>
+      </div>
+      <div class="muted" style="margin-top:8px">
+        Observação: excluir categoria individual não está implementado. Use “Restaurar padrão” se precisar.
+      </div>
+    </details>
+
+    <hr style="border:none;border-top:1px solid var(--bd);margin:14px 0">
+
+    <details>
+      <summary>Importação</summary>
+      <div class="muted" style="margin:8px 0 10px">
+        Importar TXT no formato: <b>Data;Descrição;Valor</b> (valor negativo = saída / positivo = entrada). Categoria padrão: <b>A classificar</b>.
+      </div>
+      <div class="grid3">
+        <label class="btn2" style="display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer">
+          Importar TXT
+          <input id="importTxtFile" type="file" accept=".txt,text/plain" style="display:none">
+        </label>
+        <button class="btn2" id="exportBtn" type="button">Exportar JSON (backup)</button>
+        <label class="btn2" style="display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer">
+          Importar JSON (backup)
+          <input id="importJsonFile" type="file" accept="application/json" style="display:none">
+        </label>
+      </div>
+      <div class="actions" style="margin-top:10px">
+        <button class="btnDanger" id="wipeBtn" type="button">Apagar tudo (nuvem)</button>
+      </div>
+    </details>
+  </section>
+
+  <!-- Coluna direita -->
+  <section class="card">
+    <div class="topbar">
+      <div class="left">
+        <div>
+          <label for="fComp">Filtro competência</label>
+          <input id="fComp" type="month" />
+        </div>
+        <div>
+          <label for="fTipo">Filtro tipo</label>
+          <select id="fTipo">
+            <option value="">Todos</option>
+            <option value="entrada">Entrada</option>
+            <option value="saida">Saída</option>
+          </select>
+        </div>
+        <div>
+          <label for="fCat">Filtro categoria</label>
+          <select id="fCat"></select>
+        </div>
+        <div>
+          <label for="q">Buscar</label>
+          <input id="q" type="text" placeholder="texto na descrição..." />
+        </div>
+      </div>
+      <div class="right">
+        <button class="btn2" id="clearFiltersBtn" type="button">Limpar filtros</button>
+      </div>
+    </div>
+
+    <!-- Dashboard mensal -->
+    <div id="dash" style="margin-top:12px"></div>
+
+    <div style="margin-top:12px" class="kpis">
+      <div class="kpi">
+        <div class="t">Entradas (filtro)</div>
+        <div class="v" id="kIn">R$ 0,00</div>
+      </div>
+      <div class="kpi">
+        <div class="t">Saídas (filtro)</div>
+        <div class="v" id="kOut">R$ 0,00</div>
+      </div>
+      <div class="kpi">
+        <div class="t">Saldo (filtro)</div>
+        <div class="v" id="kBal">R$ 0,00</div>
+      </div>
+    </div>
+
+    <div style="margin-top:12px">
+      <details>
+        <summary>Totais por categoria (filtro)</summary>
+        <div id="byCat" style="margin-top:10px"></div>
+      </details>
+    </div>
+
+    <h2 style="margin:14px 0 8px;font-size:16px;">Lançamentos</h2>
+    <div class="muted small" id="countInfo"></div>
+
+    <div style="overflow:auto;margin-top:8px">
+      <table>
+        <thead>
+        <tr>
+          <th style="min-width:108px">Data</th>
+          <th style="min-width:110px">Competência</th>
+          <th>Descrição</th>
+          <th style="min-width:190px">Categoria</th>
+          <th style="min-width:110px">Tipo</th>
+          <th class="right" style="min-width:120px">Valor</th>
+          <th style="min-width:110px">Ações</th>
+        </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // =========================
+  // CONFIGURE AQUI
+  // =========================
+  const SUPABASE_URL = "COLE_AQUI";
+  const SUPABASE_ANON_KEY = "COLE_AQUI";
+
+  // =========================
+  // Supabase client
+  // =========================
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // =========================
+  // Default categories
+  // =========================
+  const DEFAULT_CATEGORIES = [
+    "A classificar",
+    "Aluguel de vaga",
+    "Anuidade CRC",
+    "Aulas de inglês",
+    "Bart e Lisa",
+    "Cartão de crédito - Azul",
+    "Cartão de crédito - Itaú",
+    "Cartão de crédito - Riachuelo",
+    "Churrascos / encontros",
+    "Compras para a casa",
+    "Condomínio",
+    "Diárias recebidas",
+    "Diarista",
+    "Doações",
+    "Energia",
+    "Entradas compensatórias",
+    "Saídas compensatórias",
+    "Escolinha Samuel",
+    "Farmácia",
+    "Financiamento imobiliário",
+    "Futebol",
+    "Gás",
+    "Gastos com manutenção de casa",
+    "Investimentos - aplicações",
+    "Investimentos - resgates",
+    "IPTU",
+    "IPVA e Licenciamento",
+    "Lavanderia",
+    "Mensalidade Aud-TCE/PR",
+    "Não identificado",
+    "Outras despesas com Vina",
+    "Outras receitas",
+    "Outros gastos",
+    "Outros gastos com saúde",
+    "Personal Mãe",
+    "Plano de Saúde - Samuel, Lara e João",
+    "Plano de Saúde - Sérgio",
+    "Plano de Saúde - Vina",
+    "Plano odontológico - Lara",
+    "Presentes",
+    "Reforma",
+    "Salão / estética",
+    "Salário - verbas eventuais",
+    "Salário ordinário",
+    "Seguro da casa",
+    "Seguro do carro",
+    "Telefone",
+    "Terreno",
+    "Tv e Internet",
+    "Vestuário",
+    "Viagens"
+  ];
+
+  // =========================
+  // State (in-memory)
+  // =========================
+  let state = {
+    user: null,
+    ownerId: null,
+    categories: [],
+    entries: []
+  };
+
+  // Realtime channel
+  let realtimeChannel = null;
+
+  // =========================
+  // Helpers
+  // =========================
+  const $ = (id) => document.getElementById(id);
+
+  function toast(msg) {
+    const el = $("toast");
+    el.textContent = msg;
+    el.style.display = "block";
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => (el.style.display = "none"), 1800);
+  }
+
+  function brl(n) {
+    const v = Number(n || 0);
+    return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  }
+
+  function todayISO() {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  function monthISOFromDate(dateISO) {
+    if (!dateISO || dateISO.length < 7) return "";
+    return dateISO.slice(0, 7);
+  }
+
+  function normalizeText(s) {
+    return (s || "")
+      .toString()
+      .normalize("NFD").replace(/\p{Diacritic}/gu, "")
+      .toLowerCase()
+      .trim();
+  }
+
+  function sortEntriesDesc(a, b) {
+    if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+    return (a.createdAt || 0) < (b.createdAt || 0) ? 1 : -1;
+  }
+
+  function escapeHtml(s) {
+    return (s || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;").replaceAll("'", "&#039;");
+  }
+
+  // =========================
+  // Supabase: data layer
+  // =========================
+  async function getSessionUser() {
+    const { data: { user } } = await supabase.auth.getUser();
+    return user || null;
+  }
+
+  async function ensureDefaultCategories(ownerId) {
+    // Busca existentes
+    const { data, error } = await supabase
+      .from("categories")
+      .select("name")
+      .eq("owner_user_id", ownerId);
+
+    if (error) throw error;
+
+    const existing = new Set((data || []).map(x => normalizeText(x.name)));
+    const toInsert = DEFAULT_CATEGORIES
+      .filter(c => !existing.has(normalizeText(c)))
+      .map(name => ({ owner_user_id: ownerId, name }));
+
+    if (toInsert.length) {
+      const { error: insErr } = await supabase.from("categories").insert(toInsert);
+      if (insErr) throw insErr;
+    }
+  }
+
+  async function fetchCategories(ownerId) {
+    const { data, error } = await supabase
+      .from("categories")
+      .select("name")
+      .eq("owner_user_id", ownerId)
+      .order("name", { ascending: true });
+
+    if (error) throw error;
+
+    const names = (data || []).map(x => x.name);
+
+    // força "A classificar" no topo
+    const fixed = "A classificar";
+    const rest = names.filter(n => n !== fixed).sort((a,b) => a.localeCompare(b, "pt-BR"));
+    return [fixed, ...rest.filter(Boolean)];
+  }
+
+  async function fetchEntries(ownerId) {
+    // pega "tudo" do owner
+    // (Se ficar grande, a gente pagina. Para uso pessoal geralmente ok.)
+    const { data, error } = await supabase
+      .from("entries")
+      .select("id,created_at,owner_user_id,date,competence_month,description,type,amount,category")
+      .eq("owner_user_id", ownerId)
+      .order("date", { ascending: false });
+
+    if (error) throw error;
+
+    return (data || []).map(row => ({
+      id: row.id,
+      createdAt: new Date(row.created_at).getTime(),
+      ownerUserId: row.owner_user_id,
+      date: row.date,
+      competenceMonth: row.competence_month,
+      description: row.description,
+      type: row.type,
+      amount: Number(row.amount),
+      category: row.category
+    }));
+  }
+
+  async function insertEntry(ownerId, entry) {
+    const payload = {
+      owner_user_id: ownerId,
+      date: entry.date,
+      competence_month: entry.competenceMonth,
+      description: entry.description,
+      type: entry.type,
+      amount: entry.amount,
+      category: entry.category
+    };
+
+    const { error } = await supabase.from("entries").insert(payload);
+    if (error) throw error;
+  }
+
+  async function updateEntry(ownerId, id, patch) {
+    // patch em camelCase -> snake
+    const payload = {};
+    if (patch.date != null) payload.date = patch.date;
+    if (patch.competenceMonth != null) payload.competence_month = patch.competenceMonth;
+    if (patch.description != null) payload.description = patch.description;
+    if (patch.type != null) payload.type = patch.type;
+    if (patch.amount != null) payload.amount = patch.amount;
+    if (patch.category != null) payload.category = patch.category;
+
+    const { error } = await supabase
+      .from("entries")
+      .update(payload)
+      .eq("id", id)
+      .eq("owner_user_id", ownerId);
+
+    if (error) throw error;
+  }
+
+  async function deleteEntry(ownerId, id) {
+    const { error } = await supabase
+      .from("entries")
+      .delete()
+      .eq("id", id)
+      .eq("owner_user_id", ownerId);
+
+    if (error) throw error;
+  }
+
+  async function wipeAllData(ownerId) {
+    // apaga tudo: entries e categories (do owner)
+    const { error: e1 } = await supabase.from("entries").delete().eq("owner_user_id", ownerId);
+    if (e1) throw e1;
+    const { error: e2 } = await supabase.from("categories").delete().eq("owner_user_id", ownerId);
+    if (e2) throw e2;
+  }
+
+  async function insertCategory(ownerId, name) {
+    const { error } = await supabase.from("categories").insert({ owner_user_id: ownerId, name });
+    if (error) throw error;
+  }
+
+  // =========================
+  // UI: categories selects
+  // =========================
+  function renderCategorySelects() {
+    const catSel = $("cat");
+    const fCat = $("fCat");
+
+    catSel.innerHTML = "";
+    fCat.innerHTML = "";
+
+    for (const c of state.categories) {
+      const opt1 = document.createElement("option");
+      opt1.value = c;
+      opt1.textContent = c;
+      catSel.appendChild(opt1);
+
+      const opt2 = document.createElement("option");
+      opt2.value = c;
+      opt2.textContent = c;
+      fCat.appendChild(opt2);
+    }
+
+    const optAll = document.createElement("option");
+    optAll.value = "";
+    optAll.textContent = "Todas";
+    fCat.insertBefore(optAll, fCat.firstChild);
+  }
+
+  // =========================
+  // Dashboard mensal
+  // =========================
+  function monthRange(monthYYYYMM) {
+    const [y, m] = monthYYYYMM.split("-").map(Number);
+    const start = new Date(y, m - 1, 1);
+    const end = new Date(y, m, 1);
+    const toISO = (d) => {
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      return `${yyyy}-${mm}-${dd}`;
+    };
+    return { startISO: toISO(start), endISO: toISO(end) };
+  }
+
+  function sumToBalance(rows) {
+    let bal = 0;
+    for (const e of rows) {
+      const a = Number(e.amount || 0);
+      bal += (e.type === "entrada") ? a : -a;
+    }
+    return bal;
+  }
+
+  function groupByCategory(rows, type) {
+    const map = new Map();
+    for (const e of rows) {
+      if (e.type !== type) continue;
+      const key = e.category || "A classificar";
+      map.set(key, (map.get(key) || 0) + Number(e.amount || 0));
+    }
+    return Array.from(map.entries())
+      .map(([cat, total]) => ({ cat, total }))
+      .sort((a, b) => b.total - a.total);
+  }
+
+  function renderDashboard() {
+    const container = $("dash");
+    const month = $("fComp").value;
+
+    if (!month) {
+      container.innerHTML = `
+        <div class="dashboardCard">
+          <div class="dashboardTitle">
+            <h3>Dashboard mensal</h3>
+            <span class="meta">Selecione um mês em “Filtro competência”.</span>
+          </div>
+          <div class="muted" style="margin-top:8px">
+            O resumo considera a <b>data do lançamento</b> para calcular o saldo inicial (acumulado antes do mês escolhido).
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    const { startISO, endISO } = monthRange(month);
+
+    const before = state.entries.filter(e => e.date && e.date < startISO);
+    const saldoInicial = sumToBalance(before);
+
+    const monthRows = state.entries.filter(e => e.date && e.date >= startISO && e.date < endISO);
+
+    const entradasCat = groupByCategory(monthRows, "entrada");
+    const saidasCat = groupByCategory(monthRows, "saida");
+
+    const totalEntradas = entradasCat.reduce((s, x) => s + x.total, 0);
+    const totalSaidas = saidasCat.reduce((s, x) => s + x.total, 0);
+
+    const resultadoMes = totalEntradas - totalSaidas;
+    const saldoFinal = saldoInicial + resultadoMes;
+
+    const fmtMonth = (() => {
+      const [y, m] = month.split("-");
+      return `${m}/${y}`;
+    })();
+
+    const listHtml = (items) => {
+      if (!items.length) return `<div class="muted" style="margin-top:8px">Nenhum lançamento.</div>`;
+      return `
+        <ul class="catList">
+          ${items.map(it => `
+            <li class="catRow">
+              <span class="catName">${escapeHtml(it.cat)}</span>
+              <span class="catVal">${brl(it.total)}</span>
+            </li>
+          `).join("")}
+        </ul>
+      `;
+    };
+
+    container.innerHTML = `
+      <div class="dashboardCard">
+        <div class="dashboardTitle">
+          <h3>Resumo do mês (competência ${fmtMonth})</h3>
+          <span class="meta">Datas ${startISO} a ${endISO} (exclusivo)</span>
+        </div>
+
+        <div class="dashboardGrid">
+          <div class="dashboardCard" style="background:#f8fafc">
+            <div class="dashboardTitle">
+              <h3># SALDO INICIAL</h3>
+              <span class="badge badgeRes">Acumulado antes do mês</span>
+            </div>
+            <div class="bigMoney">${brl(saldoInicial)}</div>
+          </div>
+
+          <div class="dashboardCard">
+            <div class="dashboardTitle">
+              <h3># ENTRADAS</h3>
+              <span class="badge badgeIn">Total: ${brl(totalEntradas)}</span>
+            </div>
+            ${listHtml(entradasCat)}
+          </div>
+
+          <div class="dashboardCard">
+            <div class="dashboardTitle">
+              <h3># SAÍDAS</h3>
+              <span class="badge badgeOut">Total: ${brl(totalSaidas)}</span>
+            </div>
+            ${listHtml(saidasCat)}
+          </div>
+
+          <div class="dashboardCard" style="background:#f8fafc">
+            <div class="dashboardTitle">
+              <h3># RESULTADO DO MÊS (ENTRADAS − SAÍDAS)</h3>
+              <span class="badge badgeRes">${brl(resultadoMes)}</span>
+            </div>
+            <div class="muted" style="margin-top:6px">Entradas: ${brl(totalEntradas)} · Saídas: ${brl(totalSaidas)}</div>
+          </div>
+
+          <div class="dashboardCard" style="background:#f8fafc">
+            <div class="dashboardTitle">
+              <h3># SALDO FINAL (SALDO INICIAL + RESULTADO)</h3>
+              <span class="badge badgeRes">${brl(saldoFinal)}</span>
+            </div>
+            <div class="muted" style="margin-top:6px">Saldo inicial: ${brl(saldoInicial)} · Resultado: ${brl(resultadoMes)}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // =========================
+  // Table / filters
+  // =========================
+  function getFilteredEntries() {
+    const fComp = $("fComp").value;
+    const fTipo = $("fTipo").value;
+    const fCat = $("fCat").value;
+    const q = normalizeText($("q").value);
+
+    return state.entries
+      .slice()
+      .sort(sortEntriesDesc)
+      .filter(e => {
+        if (fComp && e.competenceMonth !== fComp) return false;
+        if (fTipo && e.type !== fTipo) return false;
+        if (fCat && e.category !== fCat) return false;
+        if (q) {
+          const hay = normalizeText(`${e.description} ${e.category}`);
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      });
+  }
+
+  function renderKpis(rows) {
+    let ins = 0, outs = 0;
+    for (const e of rows) {
+      const a = Number(e.amount || 0);
+      if (e.type === "entrada") ins += a;
+      else outs += a;
+    }
+    $("kIn").textContent = brl(ins);
+    $("kOut").textContent = brl(outs);
+    $("kBal").textContent = brl(ins - outs);
+  }
+
+  function renderByCategory(rows) {
+    const map = new Map();
+    for (const e of rows) {
+      if (!map.has(e.category)) map.set(e.category, { in: 0, out: 0 });
+      const r = map.get(e.category);
+      const a = Number(e.amount || 0);
+      if (e.type === "entrada") r.in += a; else r.out += a;
+    }
+
+    const items = Array.from(map.entries())
+      .map(([cat, v]) => ({ cat, ...v, bal: v.in - v.out }))
+      .sort((a, b) => (b.out - a.out) || (b.in - a.in));
+
+    const container = $("byCat");
+    if (!items.length) {
+      container.innerHTML = `<div class="muted">Nenhum lançamento no filtro.</div>`;
+      return;
+    }
+
+    let html = `<div style="overflow:auto"><table>
+      <thead><tr>
+        <th>Categoria</th><th class="right">Entradas</th><th class="right">Saídas</th><th class="right">Saldo</th>
+      </tr></thead><tbody>`;
+
+    for (const it of items) {
+      html += `<tr>
+        <td class="wrap">${escapeHtml(it.cat)}</td>
+        <td class="right">${brl(it.in)}</td>
+        <td class="right">${brl(it.out)}</td>
+        <td class="right">${brl(it.bal)}</td>
+      </tr>`;
+    }
+    html += `</tbody></table></div>`;
+    container.innerHTML = html;
+  }
+
+  function renderTable() {
+    const rows = getFilteredEntries();
+    const tbody = $("tbody");
+    tbody.innerHTML = "";
+
+    for (const e of rows) {
+      const tr = document.createElement("tr");
+
+      tr.innerHTML = `
+        <td>${e.date}</td>
+        <td>${e.competenceMonth}</td>
+        <td class="wrap">${escapeHtml(e.description)}</td>
+        <td class="wrap">${escapeHtml(e.category)}</td>
+        <td>
+          <span class="pill ${e.type === "entrada" ? "in" : "out"}">
+            ${e.type === "entrada" ? "Entrada" : "Saída"}
+          </span>
+        </td>
+        <td class="right">${brl(e.amount)}</td>
+        <td>
+          <button class="btn2 small" data-edit="${e.id}" type="button">Editar</button>
+          <button class="btnDanger small" data-del="${e.id}" type="button">Excluir</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    $("countInfo").textContent = `${rows.length} lançamento(s) exibido(s) (de ${state.entries.length} no total).`;
+
+    // delete
+    tbody.querySelectorAll("[data-del]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-del");
+        if (!confirm("Excluir este lançamento?")) return;
+
+        try {
+          await deleteEntry(state.ownerId, id);
+          toast("Excluído");
+          await hardSync();
+        } catch (err) {
+          console.error(err);
+          toast("Erro ao excluir");
+        }
+      });
+    });
+
+    // edit
+    tbody.querySelectorAll("[data-edit]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-edit");
+        const e = state.entries.find(x => x.id === id);
+        if (!e) return;
+
+        $("dt").value = e.date;
+        $("comp").value = e.competenceMonth;
+        $("desc").value = e.description;
+        $("tipo").value = e.type;
+        $("valor").value = e.amount;
+        $("cat").value = e.category;
+
+        setEditMode(id);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    });
+
+    renderKpis(rows);
+    renderByCategory(rows);
+  }
+
+  // =========================
+  // Form / CRUD
+  // =========================
+  let editingId = null;
+
+  function setEditMode(id) {
+    editingId = id;
+    $("addBtn").textContent = "Salvar alterações";
+  }
+
+  function clearEditMode() {
+    editingId = null;
+    $("addBtn").textContent = "Adicionar";
+  }
+
+  function clearForm() {
+    $("dt").value = todayISO();
+    $("comp").value = monthISOFromDate($("dt").value);
+    $("desc").value = "";
+    $("tipo").value = "saida";
+    $("valor").value = "";
+    $("cat").value = "A classificar";
+    clearEditMode();
+  }
+
+  async function addOrUpdateEntryUI() {
+    const date = $("dt").value;
+    const comp = $("comp").value;
+    const desc = $("desc").value.trim();
+    const type = $("tipo").value;
+    const amount = Number($("valor").value);
+    const category = $("cat").value;
+
+    if (!state.ownerId) return toast("Faça login.");
+    if (!date) return alert("Informe a data do lançamento.");
+    if (!comp) return alert("Informe o mês de competência.");
+    if (!desc) return alert("Informe a descrição.");
+    if (!type) return alert("Informe o tipo.");
+    if (!Number.isFinite(amount) || amount <= 0) return alert("Informe um valor válido (> 0).");
+    if (!category) return alert("Informe a categoria.");
+
+    try {
+      if (editingId) {
+        await updateEntry(state.ownerId, editingId, {
+          date,
+          competenceMonth: comp,
+          description: desc,
+          type,
+          amount,
+          category
+        });
+        toast("Atualizado");
+      } else {
+        await insertEntry(state.ownerId, {
+          date,
+          competenceMonth: comp,
+          description: desc,
+          type,
+          amount,
+          category
+        });
+        toast("Adicionado");
+      }
+      clearForm();
+      await hardSync();
+    } catch (err) {
+      console.error(err);
+      toast("Erro ao salvar");
+    }
+  }
+
+  // =========================
+  // Categories UI actions
+  // =========================
+  async function addCategoryUI() {
+    const raw = $("newCat").value.trim();
+    if (!state.ownerId) return toast("Faça login.");
+    if (!raw) return alert("Digite o nome da nova categoria.");
+    const exists = state.categories.some(c => normalizeText(c) === normalizeText(raw));
+    if (exists) return alert("Essa categoria já existe.");
+
+    try {
+      await insertCategory(state.ownerId, raw);
+      $("newCat").value = "";
+      toast("Categoria criada");
+      await hardSync();
+    } catch (err) {
+      console.error(err);
+      toast("Erro ao criar categoria");
+    }
+  }
+
+  async function resetCategoriesUI() {
+    if (!state.ownerId) return toast("Faça login.");
+    if (!confirm("Restaurar categorias padrão? Isso recriará as categorias padrão na nuvem (não apaga lançamentos).")) return;
+
+    try {
+      // Insere as que estiverem faltando
+      await ensureDefaultCategories(state.ownerId);
+      toast("Categorias padrão garantidas");
+      await hardSync();
+    } catch (err) {
+      console.error(err);
+      toast("Erro ao restaurar");
+    }
+  }
+
+  // =========================
+  // Backup JSON (local)
+  // =========================
+  function exportJSONLocal() {
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      categories: state.categories,
+      entries: state.entries
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `despesas-backup-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function importJSONToCloud(file) {
+    if (!state.ownerId) return toast("Faça login.");
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const parsed = JSON.parse(reader.result);
+        const cats = Array.isArray(parsed.categories) ? parsed.categories : [];
+        const entries = Array.isArray(parsed.entries) ? parsed.entries : [];
+
+        // 1) categorias: insere faltantes
+        const existing = new Set(state.categories.map(c => normalizeText(c)));
+        const toInsertCats = cats
+          .filter(c => c && !existing.has(normalizeText(c)))
+          .map(name => ({ owner_user_id: state.ownerId, name }));
+
+        if (toInsertCats.length) {
+          const { error } = await supabase.from("categories").insert(toInsertCats);
+          if (error) throw error;
+        }
+
+        // 2) entradas: insere em lote
+        const toInsertEntries = entries.map(e => ({
+          owner_user_id: state.ownerId,
+          date: e.date,
+          competence_month: e.competenceMonth || e.competence_month || monthISOFromDate(e.date),
+          description: e.description,
+          type: e.type,
+          amount: Number(e.amount),
+          category: e.category || "A classificar"
+        }));
+
+        if (toInsertEntries.length) {
+          // insere em blocos para evitar payload grande
+          const chunkSize = 500;
+          for (let i = 0; i < toInsertEntries.length; i += chunkSize) {
+            const chunk = toInsertEntries.slice(i, i + chunkSize);
+            const { error } = await supabase.from("entries").insert(chunk);
+            if (error) throw error;
+          }
+        }
+
+        toast("Importação concluída");
+        await hardSync();
+      } catch (err) {
+        console.error(err);
+        toast("Falha ao importar JSON");
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  // =========================
+  // Import TXT
+  // =========================
+  function parsePtBrNumber(raw) {
+    const s = (raw || "").toString().trim();
+    const normalized = s.replace(/\s/g, "").replace(/\./g, "").replace(",", ".");
+    const n = Number(normalized);
+    return Number.isFinite(n) ? n : NaN;
+  }
+
+  function parseDateBR(dateStr) {
+    const s = (dateStr || "").trim();
+    const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (!m) return null;
+    const dd = m[1], mm = m[2], yyyy = m[3];
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  async function importTXTToCloud(file) {
+    if (!state.ownerId) return toast("Faça login.");
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const text = (reader.result || "").toString();
+        const lines = text.split(/\r?\n/);
+
+        const rows = [];
+        let skipped = 0;
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+
+          const parts = line.split(";");
+          if (parts.length < 3) { skipped++; continue; }
+
+          const dateBR = parts[0].trim();
+          const desc = parts.slice(1, parts.length - 1).join(";").trim();
+          const valRaw = parts[parts.length - 1].trim();
+
+          const dateISO = parseDateBR(dateBR);
+          const value = parsePtBrNumber(valRaw);
+
+          if (!dateISO || !desc || !Number.isFinite(value) || value === 0) { skipped++; continue; }
+
+          const type = value > 0 ? "entrada" : "saida";
+          const amount = Math.abs(value);
+
+          rows.push({
+            owner_user_id: state.ownerId,
+            date: dateISO,
+            competence_month: monthISOFromDate(dateISO),
+            description: desc,
+            type,
+            amount,
+            category: "A classificar"
+          });
+        }
+
+        if (!rows.length) {
+          toast("Nada para importar");
+          return;
+        }
+
+        // Insert em blocos
+        const chunkSize = 500;
+        for (let i = 0; i < rows.length; i += chunkSize) {
+          const chunk = rows.slice(i, i + chunkSize);
+          const { error } = await supabase.from("entries").insert(chunk);
+          if (error) throw error;
+        }
+
+        toast(`Importados: ${rows.length} | Ignorados: ${skipped}`);
+        await hardSync();
+      } catch (err) {
+        console.error(err);
+        toast("Erro ao importar TXT");
+      }
+    };
+
+    reader.readAsText(file);
+  }
+
+  // =========================
+  // Filters
+  // =========================
+  function clearFilters() {
+    $("fComp").value = "";
+    $("fTipo").value = "";
+    $("fCat").value = "";
+    $("q").value = "";
+    refreshUI();
+  }
+
+  // =========================
+  // UI refresh
+  // =========================
+  function refreshUI() {
+    renderDashboard();
+    renderTable();
+  }
+
+  // =========================
+  // Sync / Login flow
+  // =========================
+  async function hardSync() {
+    if (!state.ownerId) return;
+
+    $("syncBtn").disabled = true;
+    try {
+      // garante categorias padrão (idempotente)
+      await ensureDefaultCategories(state.ownerId);
+      state.categories = await fetchCategories(state.ownerId);
+      state.entries = await fetchEntries(state.ownerId);
+      renderCategorySelects();
+      refreshUI();
+    } finally {
+      $("syncBtn").disabled = false;
+    }
+  }
+
+  async function setLoggedInUI(user) {
+    state.user = user;
+    state.ownerId = user ? user.id : null;
+
+    if (!user) {
+      $("userInfo").textContent = "Desconectado";
+      $("loginSection").style.display = "block";
+      $("appMain").style.display = "none";
+      $("logoutBtn").disabled = true;
+      $("syncBtn").disabled = true;
+
+      // cleanup realtime
+      if (realtimeChannel) {
+        await supabase.removeChannel(realtimeChannel);
+        realtimeChannel = null;
+      }
+      return;
+    }
+
+    $("userInfo").textContent = user.email || "Conectado";
+    $("loginSection").style.display = "none";
+    $("appMain").style.display = "grid";
+    $("logoutBtn").disabled = false;
+    $("syncBtn").disabled = false;
+
+    // defaults do form
+    $("dt").value = todayISO();
+    $("comp").value = monthISOFromDate($("dt").value);
+    $("tipo").value = "saida";
+
+    await hardSync();
+    setupRealtime();
+  }
+
+  function setupRealtime() {
+    // Realtime pode exigir habilitar no Supabase. Se não estiver habilitado, apenas “Sincronizar” funciona.
+    if (realtimeChannel) return;
+
+    realtimeChannel = supabase
+      .channel("entries_changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "entries", filter: `owner_user_id=eq.${state.ownerId}` },
+        async () => {
+          // Quando sua esposa classificar pelo celular, chega aqui e atualiza
+          await hardSync();
+        }
+      )
+      .subscribe((status) => {
+        // status pode ser SUBSCRIBED, CHANNEL_ERROR, TIMED_OUT...
+        // Não trava o app se realtime falhar.
+        console.log("Realtime:", status);
+      });
+  }
+
+  // =========================
+  // Events
+  // =========================
+  $("loginBtn").addEventListener("click", async () => {
+    const email = $("loginEmail").value.trim();
+    const password = $("loginPass").value;
+    if (!email || !password) return toast("Informe e-mail e senha.");
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      console.error(error);
+      return toast("Falha no login");
+    }
+    toast("Login ok");
+    const user = await getSessionUser();
+    await setLoggedInUI(user);
+  });
+
+  $("logoutBtn").addEventListener("click", async () => {
+    await supabase.auth.signOut();
+    toast("Saiu");
+    await setLoggedInUI(null);
+  });
+
+  $("syncBtn").addEventListener("click", async () => {
+    toast("Sincronizando...");
+    await hardSync();
+    toast("Atualizado");
+  });
+
+  $("openMobileBtn").addEventListener("click", () => {
+    // se estiver hospedado no mesmo diretório, isso abre classificar.html
+    const url = new URL("classificar.html", window.location.href).toString();
+    prompt("Link para sua esposa (cole no WhatsApp):", url);
+  });
+
+  // form
+  $("addBtn").addEventListener("click", addOrUpdateEntryUI);
+  $("clearFormBtn").addEventListener("click", clearForm);
+  $("dt").addEventListener("change", () => {
+    const v = $("dt").value;
+    if (v) $("comp").value = monthISOFromDate(v);
+  });
+
+  // categories
+  $("addCatBtn").addEventListener("click", addCategoryUI);
+  $("resetCatsBtn").addEventListener("click", resetCategoriesUI);
+
+  // filters
+  ["fComp","fTipo","fCat","q"].forEach(id => $(id).addEventListener("input", refreshUI));
+  $("clearFiltersBtn").addEventListener("click", clearFilters);
+
+  // import/export
+  $("exportBtn").addEventListener("click", exportJSONLocal);
+
+  $("importJsonFile").addEventListener("change", async (ev) => {
+    const f = ev.target.files && ev.target.files[0];
+    if (f) await importJSONToCloud(f);
+    ev.target.value = "";
+  });
+
+  $("importTxtFile").addEventListener("change", async (ev) => {
+    const f = ev.target.files && ev.target.files[0];
+    if (f) await importTXTToCloud(f);
+    ev.target.value = "";
+  });
+
+  $("wipeBtn").addEventListener("click", async () => {
+    if (!state.ownerId) return toast("Faça login.");
+    if (!confirm("Apagar TUDO da nuvem (lançamentos e categorias)?")) return;
+    try {
+      await wipeAllData(state.ownerId);
+      toast("Tudo apagado");
+      await hardSync();
+    } catch (err) {
+      console.error(err);
+      toast("Erro ao apagar");
+    }
+  });
+
+  // Auth state changes
+  supabase.auth.onAuthStateChange(async () => {
+    const user = await getSessionUser();
+    await setLoggedInUI(user);
+  });
+
+  // Init
+  (async function init() {
+    const user = await getSessionUser();
+    await setLoggedInUI(user);
+  })();
+</script>
+</body>
+</html>
