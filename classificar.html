@@ -82,10 +82,20 @@
 
 <script>
   // ====== CONFIGURE AQUI ======
-  const SUPABASE_URL = "https://fvkngakqturoppbbjaqk.supabase.co";
+  const SUPABASE_URL = "https://fvkngakqturopbbbjaqk.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2a25nYWtxdHVyb3BwYmJqYXFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwOTI5NjEsImV4cCI6MjA4NzY2ODk2MX0.XeqS-MnYyIZWGSP5H-MDMIDvCU-_UsqSpfJe7WadiTA";
 
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const supabaseLib =
+    (window.supabase && typeof window.supabase.createClient === "function" && window.supabase) ||
+    (window.supabaseJs && typeof window.supabaseJs.createClient === "function" && window.supabaseJs) ||
+    (globalThis.supabase && typeof globalThis.supabase.createClient === "function" && globalThis.supabase);
+
+  if (!supabaseLib) {
+    alert("Erro: biblioteca Supabase não carregou. Verifique sua conexão ou o script do CDN.");
+    throw new Error("Supabase library not found");
+  }
+
+  const supabase = supabaseLib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   const $ = (id) => document.getElementById(id);
 
@@ -110,7 +120,7 @@
 
   async function getOwnerId() {
     const { data: { user } } = await supabase.auth.getUser();
-    return user ? user.id : null; // login compartilhado = owner é o próprio uid
+    return user ? user.id : null;
   }
 
   async function fetchCategories(ownerId) {

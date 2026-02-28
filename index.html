@@ -290,13 +290,23 @@
   // =========================
   // CONFIGURE AQUI
   // =========================
-  const SUPABASE_URL = "https://fvkngakqturoppbbjaqk.supabase.co";
+  const SUPABASE_URL = "https://fvkngakqturopbbbjaqk.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2a25nYWtxdHVyb3BwYmJqYXFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwOTI5NjEsImV4cCI6MjA4NzY2ODk2MX0.XeqS-MnYyIZWGSP5H-MDMIDvCU-_UsqSpfJe7WadiTA";
 
   // =========================
-  // Supabase client
+  // Supabase client (robusto)
   // =========================
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const supabaseLib =
+    (window.supabase && typeof window.supabase.createClient === "function" && window.supabase) ||
+    (window.supabaseJs && typeof window.supabaseJs.createClient === "function" && window.supabaseJs) ||
+    (globalThis.supabase && typeof globalThis.supabase.createClient === "function" && globalThis.supabase);
+
+  if (!supabaseLib) {
+    alert("Erro: biblioteca Supabase não carregou. Verifique sua conexão ou o script do CDN.");
+    throw new Error("Supabase library not found");
+  }
+
+  const supabase = supabaseLib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   // =========================
   // Default categories
@@ -365,7 +375,6 @@
     entries: []
   };
 
-  // Realtime channel
   let realtimeChannel = null;
 
   // =========================
@@ -426,7 +435,6 @@
   }
 
   async function ensureDefaultCategories(ownerId) {
-    // Busca existentes
     const { data, error } = await supabase
       .from("categories")
       .select("name")
@@ -455,16 +463,12 @@
     if (error) throw error;
 
     const names = (data || []).map(x => x.name);
-
-    // força "A classificar" no topo
     const fixed = "A classificar";
     const rest = names.filter(n => n !== fixed).sort((a,b) => a.localeCompare(b, "pt-BR"));
     return [fixed, ...rest.filter(Boolean)];
   }
 
   async function fetchEntries(ownerId) {
-    // pega "tudo" do owner
-    // (Se ficar grande, a gente pagina. Para uso pessoal geralmente ok.)
     const { data, error } = await supabase
       .from("entries")
       .select("id,created_at,owner_user_id,date,competence_month,description,type,amount,category")
@@ -502,7 +506,6 @@
   }
 
   async function updateEntry(ownerId, id, patch) {
-    // patch em camelCase -> snake
     const payload = {};
     if (patch.date != null) payload.date = patch.date;
     if (patch.competenceMonth != null) payload.competence_month = patch.competenceMonth;
@@ -531,7 +534,6 @@
   }
 
   async function wipeAllData(ownerId) {
-    // apaga tudo: entries e categories (do owner)
     const { error: e1 } = await supabase.from("entries").delete().eq("owner_user_id", ownerId);
     if (e1) throw e1;
     const { error: e2 } = await supabase.from("categories").delete().eq("owner_user_id", ownerId);
@@ -815,7 +817,6 @@
 
     $("countInfo").textContent = `${rows.length} lançamento(s) exibido(s) (de ${state.entries.length} no total).`;
 
-    // delete
     tbody.querySelectorAll("[data-del]").forEach(btn => {
       btn.addEventListener("click", async () => {
         const id = btn.getAttribute("data-del");
@@ -832,7 +833,6 @@
       });
     });
 
-    // edit
     tbody.querySelectorAll("[data-edit]").forEach(btn => {
       btn.addEventListener("click", () => {
         const id = btn.getAttribute("data-edit");
@@ -952,7 +952,6 @@
     if (!confirm("Restaurar categorias padrão? Isso recriará as categorias padrão na nuvem (não apaga lançamentos).")) return;
 
     try {
-      // Insere as que estiverem faltando
       await ensureDefaultCategories(state.ownerId);
       toast("Categorias padrão garantidas");
       await hardSync();
@@ -989,7 +988,6 @@
         const cats = Array.isArray(parsed.categories) ? parsed.categories : [];
         const entries = Array.isArray(parsed.entries) ? parsed.entries : [];
 
-        // 1) categorias: insere faltantes
         const existing = new Set(state.categories.map(c => normalizeText(c)));
         const toInsertCats = cats
           .filter(c => c && !existing.has(normalizeText(c)))
@@ -1000,7 +998,6 @@
           if (error) throw error;
         }
 
-        // 2) entradas: insere em lote
         const toInsertEntries = entries.map(e => ({
           owner_user_id: state.ownerId,
           date: e.date,
@@ -1012,7 +1009,6 @@
         }));
 
         if (toInsertEntries.length) {
-          // insere em blocos para evitar payload grande
           const chunkSize = 500;
           for (let i = 0; i < toInsertEntries.length; i += chunkSize) {
             const chunk = toInsertEntries.slice(i, i + chunkSize);
@@ -1096,7 +1092,6 @@
           return;
         }
 
-        // Insert em blocos
         const chunkSize = 500;
         for (let i = 0; i < rows.length; i += chunkSize) {
           const chunk = rows.slice(i, i + chunkSize);
@@ -1126,9 +1121,6 @@
     refreshUI();
   }
 
-  // =========================
-  // UI refresh
-  // =========================
   function refreshUI() {
     renderDashboard();
     renderTable();
@@ -1142,7 +1134,6 @@
 
     $("syncBtn").disabled = true;
     try {
-      // garante categorias padrão (idempotente)
       await ensureDefaultCategories(state.ownerId);
       state.categories = await fetchCategories(state.ownerId);
       state.entries = await fetchEntries(state.ownerId);
@@ -1164,7 +1155,6 @@
       $("logoutBtn").disabled = true;
       $("syncBtn").disabled = true;
 
-      // cleanup realtime
       if (realtimeChannel) {
         await supabase.removeChannel(realtimeChannel);
         realtimeChannel = null;
@@ -1178,7 +1168,6 @@
     $("logoutBtn").disabled = false;
     $("syncBtn").disabled = false;
 
-    // defaults do form
     $("dt").value = todayISO();
     $("comp").value = monthISOFromDate($("dt").value);
     $("tipo").value = "saida";
@@ -1188,7 +1177,6 @@
   }
 
   function setupRealtime() {
-    // Realtime pode exigir habilitar no Supabase. Se não estiver habilitado, apenas “Sincronizar” funciona.
     if (realtimeChannel) return;
 
     realtimeChannel = supabase
@@ -1197,15 +1185,10 @@
         "postgres_changes",
         { event: "*", schema: "public", table: "entries", filter: `owner_user_id=eq.${state.ownerId}` },
         async () => {
-          // Quando sua esposa classificar pelo celular, chega aqui e atualiza
           await hardSync();
         }
       )
-      .subscribe((status) => {
-        // status pode ser SUBSCRIBED, CHANNEL_ERROR, TIMED_OUT...
-        // Não trava o app se realtime falhar.
-        console.log("Realtime:", status);
-      });
+      .subscribe((status) => console.log("Realtime:", status));
   }
 
   // =========================
@@ -1214,6 +1197,7 @@
   $("loginBtn").addEventListener("click", async () => {
     const email = $("loginEmail").value.trim();
     const password = $("loginPass").value;
+
     if (!email || !password) return toast("Informe e-mail e senha.");
 
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -1221,6 +1205,7 @@
       console.error(error);
       return toast("Falha no login");
     }
+
     toast("Login ok");
     const user = await getSessionUser();
     await setLoggedInUI(user);
@@ -1239,28 +1224,24 @@
   });
 
   $("openMobileBtn").addEventListener("click", () => {
-    // se estiver hospedado no mesmo diretório, isso abre classificar.html
     const url = new URL("classificar.html", window.location.href).toString();
     prompt("Link para sua esposa (cole no WhatsApp):", url);
   });
 
-  // form
   $("addBtn").addEventListener("click", addOrUpdateEntryUI);
   $("clearFormBtn").addEventListener("click", clearForm);
+
   $("dt").addEventListener("change", () => {
     const v = $("dt").value;
     if (v) $("comp").value = monthISOFromDate(v);
   });
 
-  // categories
   $("addCatBtn").addEventListener("click", addCategoryUI);
   $("resetCatsBtn").addEventListener("click", resetCategoriesUI);
 
-  // filters
   ["fComp","fTipo","fCat","q"].forEach(id => $(id).addEventListener("input", refreshUI));
   $("clearFiltersBtn").addEventListener("click", clearFilters);
 
-  // import/export
   $("exportBtn").addEventListener("click", exportJSONLocal);
 
   $("importJsonFile").addEventListener("change", async (ev) => {
@@ -1288,13 +1269,11 @@
     }
   });
 
-  // Auth state changes
   supabase.auth.onAuthStateChange(async () => {
     const user = await getSessionUser();
     await setLoggedInUI(user);
   });
 
-  // Init
   (async function init() {
     const user = await getSessionUser();
     await setLoggedInUI(user);
