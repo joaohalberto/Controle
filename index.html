@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Controle de Despesas (Pessoal)</title>
 
-  <!-- sb JS (CDN) -->
+  <!-- Supabase JS (CDN) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
@@ -176,7 +176,7 @@
       </div>
       <div class="actions" style="margin-top:10px">
         <button class="btn2" id="addCatBtn" type="button">Cadastrar categoria</button>
-        <button class="btnDanger" id="resetCatsBtn" type="button" title="Restaura a lista padrão e remove categorias adicionadas">Restaurar padrão</button>
+        <button class="btnDanger" id="resetCatsBtn" type="button">Restaurar padrão</button>
       </div>
       <div class="muted" style="margin-top:8px">
         Observação: excluir categoria individual não está implementado. Use “Restaurar padrão” se precisar.
@@ -237,7 +237,6 @@
       </div>
     </div>
 
-    <!-- Dashboard mensal -->
     <div id="dash" style="margin-top:12px"></div>
 
     <div style="margin-top:12px" class="kpis">
@@ -290,20 +289,20 @@
   // =========================
   // CONFIGURE AQUI
   // =========================
-  const SUPABASE_URL = "https://fvkngakqturopbbbjaqk.sb.co";
+  const SUPABASE_URL = "https://fvkngakqturopbbbjaqk.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2a25nYWtxdHVyb3BwYmJqYXFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwOTI5NjEsImV4cCI6MjA4NzY2ODk2MX0.XeqS-MnYyIZWGSP5H-MDMIDvCU-_UsqSpfJe7WadiTA";
 
   // =========================
-  // sb client (robusto)
+  // Supabase client (usa nome "sb" para não conflitar com nada)
   // =========================
   const supabaseLib =
-    (window.sb && typeof window.sb.createClient === "function" && window.supabase) ||
+    (window.supabase && typeof window.supabase.createClient === "function" && window.supabase) ||
     (window.supabaseJs && typeof window.supabaseJs.createClient === "function" && window.supabaseJs) ||
-    (globalThis.sb && typeof globalThis.sb.createClient === "function" && globalThis.supabase);
+    (globalThis.supabase && typeof globalThis.supabase.createClient === "function" && globalThis.supabase);
 
   if (!supabaseLib) {
-    alert("Erro: biblioteca sb não carregou. Verifique sua conexão ou o script do CDN.");
-    throw new Error("sb library not found");
+    alert("Erro: biblioteca Supabase não carregou. Verifique sua conexão ou o script do CDN.");
+    throw new Error("Supabase library not found");
   }
 
   const sb = supabaseLib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -312,74 +311,21 @@
   // Default categories
   // =========================
   const DEFAULT_CATEGORIES = [
-    "A classificar",
-    "Aluguel de vaga",
-    "Anuidade CRC",
-    "Aulas de inglês",
-    "Bart e Lisa",
-    "Cartão de crédito - Azul",
-    "Cartão de crédito - Itaú",
-    "Cartão de crédito - Riachuelo",
-    "Churrascos / encontros",
-    "Compras para a casa",
-    "Condomínio",
-    "Diárias recebidas",
-    "Diarista",
-    "Doações",
-    "Energia",
-    "Entradas compensatórias",
-    "Saídas compensatórias",
-    "Escolinha Samuel",
-    "Farmácia",
-    "Financiamento imobiliário",
-    "Futebol",
-    "Gás",
-    "Gastos com manutenção de casa",
-    "Investimentos - aplicações",
-    "Investimentos - resgates",
-    "IPTU",
-    "IPVA e Licenciamento",
-    "Lavanderia",
-    "Mensalidade Aud-TCE/PR",
-    "Não identificado",
-    "Outras despesas com Vina",
-    "Outras receitas",
-    "Outros gastos",
-    "Outros gastos com saúde",
-    "Personal Mãe",
-    "Plano de Saúde - Samuel, Lara e João",
-    "Plano de Saúde - Sérgio",
-    "Plano de Saúde - Vina",
-    "Plano odontológico - Lara",
-    "Presentes",
-    "Reforma",
-    "Salão / estética",
-    "Salário - verbas eventuais",
-    "Salário ordinário",
-    "Seguro da casa",
-    "Seguro do carro",
-    "Telefone",
-    "Terreno",
-    "Tv e Internet",
-    "Vestuário",
-    "Viagens"
+    "A classificar","Aluguel de vaga","Anuidade CRC","Aulas de inglês","Bart e Lisa",
+    "Cartão de crédito - Azul","Cartão de crédito - Itaú","Cartão de crédito - Riachuelo",
+    "Churrascos / encontros","Compras para a casa","Condomínio","Diárias recebidas","Diarista",
+    "Doações","Energia","Entradas compensatórias","Saídas compensatórias","Escolinha Samuel","Farmácia",
+    "Financiamento imobiliário","Futebol","Gás","Gastos com manutenção de casa","Investimentos - aplicações",
+    "Investimentos - resgates","IPTU","IPVA e Licenciamento","Lavanderia","Mensalidade Aud-TCE/PR",
+    "Não identificado","Outras despesas com Vina","Outras receitas","Outros gastos","Outros gastos com saúde",
+    "Personal Mãe","Plano de Saúde - Samuel, Lara e João","Plano de Saúde - Sérgio","Plano de Saúde - Vina",
+    "Plano odontológico - Lara","Presentes","Reforma","Salão / estética","Salário - verbas eventuais",
+    "Salário ordinário","Seguro da casa","Seguro do carro","Telefone","Terreno","Tv e Internet","Vestuário","Viagens"
   ];
 
-  // =========================
-  // State (in-memory)
-  // =========================
-  let state = {
-    user: null,
-    ownerId: null,
-    categories: [],
-    entries: []
-  };
-
+  let state = { user:null, ownerId:null, categories:[], entries:[] };
   let realtimeChannel = null;
 
-  // =========================
-  // Helpers
-  // =========================
   const $ = (id) => document.getElementById(id);
 
   function toast(msg) {
@@ -409,11 +355,7 @@
   }
 
   function normalizeText(s) {
-    return (s || "")
-      .toString()
-      .normalize("NFD").replace(/\p{Diacritic}/gu, "")
-      .toLowerCase()
-      .trim();
+    return (s || "").toString().normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().trim();
   }
 
   function sortEntriesDesc(a, b) {
@@ -426,25 +368,18 @@
       .replaceAll('"', "&quot;").replaceAll("'", "&#039;");
   }
 
-  // =========================
-  // Supabase: data layer
-  // =========================
+  // -------- Supabase helpers --------
   async function getSessionUser() {
     const { data: { user } } = await sb.auth.getUser();
     return user || null;
   }
 
   async function ensureDefaultCategories(ownerId) {
-    const { data, error } = await supabase
-      .from("categories")
-      .select("name")
-      .eq("owner_user_id", ownerId);
-
+    const { data, error } = await sb.from("categories").select("name").eq("owner_user_id", ownerId);
     if (error) throw error;
 
     const existing = new Set((data || []).map(x => normalizeText(x.name)));
-    const toInsert = DEFAULT_CATEGORIES
-      .filter(c => !existing.has(normalizeText(c)))
+    const toInsert = DEFAULT_CATEGORIES.filter(c => !existing.has(normalizeText(c)))
       .map(name => ({ owner_user_id: ownerId, name }));
 
     if (toInsert.length) {
@@ -454,12 +389,7 @@
   }
 
   async function fetchCategories(ownerId) {
-    const { data, error } = await supabase
-      .from("categories")
-      .select("name")
-      .eq("owner_user_id", ownerId)
-      .order("name", { ascending: true });
-
+    const { data, error } = await sb.from("categories").select("name").eq("owner_user_id", ownerId).order("name", { ascending: true });
     if (error) throw error;
 
     const names = (data || []).map(x => x.name);
@@ -469,7 +399,7 @@
   }
 
   async function fetchEntries(ownerId) {
-    const { data, error } = await supabase
+    const { data, error } = await sb
       .from("entries")
       .select("id,created_at,owner_user_id,date,competence_month,description,type,amount,category")
       .eq("owner_user_id", ownerId)
@@ -500,7 +430,6 @@
       amount: entry.amount,
       category: entry.category
     };
-
     const { error } = await sb.from("entries").insert(payload);
     if (error) throw error;
   }
@@ -514,22 +443,12 @@
     if (patch.amount != null) payload.amount = patch.amount;
     if (patch.category != null) payload.category = patch.category;
 
-    const { error } = await supabase
-      .from("entries")
-      .update(payload)
-      .eq("id", id)
-      .eq("owner_user_id", ownerId);
-
+    const { error } = await sb.from("entries").update(payload).eq("id", id).eq("owner_user_id", ownerId);
     if (error) throw error;
   }
 
   async function deleteEntry(ownerId, id) {
-    const { error } = await supabase
-      .from("entries")
-      .delete()
-      .eq("id", id)
-      .eq("owner_user_id", ownerId);
-
+    const { error } = await sb.from("entries").delete().eq("id", id).eq("owner_user_id", ownerId);
     if (error) throw error;
   }
 
@@ -545,47 +464,30 @@
     if (error) throw error;
   }
 
-  // =========================
-  // UI: categories selects
-  // =========================
+  // -------- UI / Dashboard --------
   function renderCategorySelects() {
     const catSel = $("cat");
     const fCat = $("fCat");
-
     catSel.innerHTML = "";
     fCat.innerHTML = "";
 
     for (const c of state.categories) {
       const opt1 = document.createElement("option");
-      opt1.value = c;
-      opt1.textContent = c;
-      catSel.appendChild(opt1);
+      opt1.value = c; opt1.textContent = c; catSel.appendChild(opt1);
 
       const opt2 = document.createElement("option");
-      opt2.value = c;
-      opt2.textContent = c;
-      fCat.appendChild(opt2);
+      opt2.value = c; opt2.textContent = c; fCat.appendChild(opt2);
     }
-
     const optAll = document.createElement("option");
-    optAll.value = "";
-    optAll.textContent = "Todas";
+    optAll.value = ""; optAll.textContent = "Todas";
     fCat.insertBefore(optAll, fCat.firstChild);
   }
 
-  // =========================
-  // Dashboard mensal
-  // =========================
   function monthRange(monthYYYYMM) {
     const [y, m] = monthYYYYMM.split("-").map(Number);
     const start = new Date(y, m - 1, 1);
     const end = new Date(y, m, 1);
-    const toISO = (d) => {
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth() + 1).padStart(2, "0");
-      const dd = String(d.getDate()).padStart(2, "0");
-      return `${yyyy}-${mm}-${dd}`;
-    };
+    const toISO = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
     return { startISO: toISO(start), endISO: toISO(end) };
   }
 
@@ -605,9 +507,7 @@
       const key = e.category || "A classificar";
       map.set(key, (map.get(key) || 0) + Number(e.amount || 0));
     }
-    return Array.from(map.entries())
-      .map(([cat, total]) => ({ cat, total }))
-      .sort((a, b) => b.total - a.total);
+    return Array.from(map.entries()).map(([cat, total]) => ({ cat, total })).sort((a,b) => b.total - a.total);
   }
 
   function renderDashboard() {
@@ -624,44 +524,35 @@
           <div class="muted" style="margin-top:8px">
             O resumo considera a <b>data do lançamento</b> para calcular o saldo inicial (acumulado antes do mês escolhido).
           </div>
-        </div>
-      `;
+        </div>`;
       return;
     }
 
     const { startISO, endISO } = monthRange(month);
-
     const before = state.entries.filter(e => e.date && e.date < startISO);
     const saldoInicial = sumToBalance(before);
 
     const monthRows = state.entries.filter(e => e.date && e.date >= startISO && e.date < endISO);
-
     const entradasCat = groupByCategory(monthRows, "entrada");
     const saidasCat = groupByCategory(monthRows, "saida");
 
-    const totalEntradas = entradasCat.reduce((s, x) => s + x.total, 0);
-    const totalSaidas = saidasCat.reduce((s, x) => s + x.total, 0);
-
+    const totalEntradas = entradasCat.reduce((s,x)=>s+x.total,0);
+    const totalSaidas = saidasCat.reduce((s,x)=>s+x.total,0);
     const resultadoMes = totalEntradas - totalSaidas;
     const saldoFinal = saldoInicial + resultadoMes;
 
-    const fmtMonth = (() => {
-      const [y, m] = month.split("-");
-      return `${m}/${y}`;
-    })();
+    const [y,m] = month.split("-");
+    const fmtMonth = `${m}/${y}`;
 
     const listHtml = (items) => {
       if (!items.length) return `<div class="muted" style="margin-top:8px">Nenhum lançamento.</div>`;
-      return `
-        <ul class="catList">
-          ${items.map(it => `
-            <li class="catRow">
-              <span class="catName">${escapeHtml(it.cat)}</span>
-              <span class="catVal">${brl(it.total)}</span>
-            </li>
-          `).join("")}
-        </ul>
-      `;
+      return `<ul class="catList">${
+        items.map(it => `
+          <li class="catRow">
+            <span class="catName">${escapeHtml(it.cat)}</span>
+            <span class="catVal">${brl(it.total)}</span>
+          </li>`).join("")
+      }</ul>`;
     };
 
     container.innerHTML = `
@@ -712,40 +603,32 @@
             <div class="muted" style="margin-top:6px">Saldo inicial: ${brl(saldoInicial)} · Resultado: ${brl(resultadoMes)}</div>
           </div>
         </div>
-      </div>
-    `;
+      </div>`;
   }
 
-  // =========================
-  // Table / filters
-  // =========================
   function getFilteredEntries() {
     const fComp = $("fComp").value;
     const fTipo = $("fTipo").value;
     const fCat = $("fCat").value;
     const q = normalizeText($("q").value);
 
-    return state.entries
-      .slice()
-      .sort(sortEntriesDesc)
-      .filter(e => {
-        if (fComp && e.competenceMonth !== fComp) return false;
-        if (fTipo && e.type !== fTipo) return false;
-        if (fCat && e.category !== fCat) return false;
-        if (q) {
-          const hay = normalizeText(`${e.description} ${e.category}`);
-          if (!hay.includes(q)) return false;
-        }
-        return true;
-      });
+    return state.entries.slice().sort(sortEntriesDesc).filter(e => {
+      if (fComp && e.competenceMonth !== fComp) return false;
+      if (fTipo && e.type !== fTipo) return false;
+      if (fCat && e.category !== fCat) return false;
+      if (q) {
+        const hay = normalizeText(`${e.description} ${e.category}`);
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
   }
 
   function renderKpis(rows) {
-    let ins = 0, outs = 0;
+    let ins=0, outs=0;
     for (const e of rows) {
       const a = Number(e.amount || 0);
-      if (e.type === "entrada") ins += a;
-      else outs += a;
+      if (e.type === "entrada") ins += a; else outs += a;
     }
     $("kIn").textContent = brl(ins);
     $("kOut").textContent = brl(outs);
@@ -755,27 +638,20 @@
   function renderByCategory(rows) {
     const map = new Map();
     for (const e of rows) {
-      if (!map.has(e.category)) map.set(e.category, { in: 0, out: 0 });
+      if (!map.has(e.category)) map.set(e.category, { in:0, out:0 });
       const r = map.get(e.category);
       const a = Number(e.amount || 0);
       if (e.type === "entrada") r.in += a; else r.out += a;
     }
-
     const items = Array.from(map.entries())
-      .map(([cat, v]) => ({ cat, ...v, bal: v.in - v.out }))
-      .sort((a, b) => (b.out - a.out) || (b.in - a.in));
+      .map(([cat,v]) => ({ cat, ...v, bal: v.in - v.out }))
+      .sort((a,b) => (b.out - a.out) || (b.in - a.in));
 
     const container = $("byCat");
-    if (!items.length) {
-      container.innerHTML = `<div class="muted">Nenhum lançamento no filtro.</div>`;
-      return;
-    }
+    if (!items.length) { container.innerHTML = `<div class="muted">Nenhum lançamento no filtro.</div>`; return; }
 
     let html = `<div style="overflow:auto"><table>
-      <thead><tr>
-        <th>Categoria</th><th class="right">Entradas</th><th class="right">Saídas</th><th class="right">Saldo</th>
-      </tr></thead><tbody>`;
-
+      <thead><tr><th>Categoria</th><th class="right">Entradas</th><th class="right">Saídas</th><th class="right">Saldo</th></tr></thead><tbody>`;
     for (const it of items) {
       html += `<tr>
         <td class="wrap">${escapeHtml(it.cat)}</td>
@@ -795,23 +671,17 @@
 
     for (const e of rows) {
       const tr = document.createElement("tr");
-
       tr.innerHTML = `
         <td>${e.date}</td>
         <td>${e.competenceMonth}</td>
         <td class="wrap">${escapeHtml(e.description)}</td>
         <td class="wrap">${escapeHtml(e.category)}</td>
-        <td>
-          <span class="pill ${e.type === "entrada" ? "in" : "out"}">
-            ${e.type === "entrada" ? "Entrada" : "Saída"}
-          </span>
-        </td>
+        <td><span class="pill ${e.type === "entrada" ? "in" : "out"}">${e.type === "entrada" ? "Entrada" : "Saída"}</span></td>
         <td class="right">${brl(e.amount)}</td>
         <td>
           <button class="btn2 small" data-edit="${e.id}" type="button">Editar</button>
           <button class="btnDanger small" data-del="${e.id}" type="button">Excluir</button>
-        </td>
-      `;
+        </td>`;
       tbody.appendChild(tr);
     }
 
@@ -821,7 +691,6 @@
       btn.addEventListener("click", async () => {
         const id = btn.getAttribute("data-del");
         if (!confirm("Excluir este lançamento?")) return;
-
         try {
           await deleteEntry(state.ownerId, id);
           toast("Excluído");
@@ -838,14 +707,12 @@
         const id = btn.getAttribute("data-edit");
         const e = state.entries.find(x => x.id === id);
         if (!e) return;
-
         $("dt").value = e.date;
         $("comp").value = e.competenceMonth;
         $("desc").value = e.description;
         $("tipo").value = e.type;
         $("valor").value = e.amount;
         $("cat").value = e.category;
-
         setEditMode(id);
         window.scrollTo({ top: 0, behavior: "smooth" });
       });
@@ -855,9 +722,7 @@
     renderByCategory(rows);
   }
 
-  // =========================
-  // Form / CRUD
-  // =========================
+  // -------- Form CRUD --------
   let editingId = null;
 
   function setEditMode(id) {
@@ -898,24 +763,10 @@
 
     try {
       if (editingId) {
-        await updateEntry(state.ownerId, editingId, {
-          date,
-          competenceMonth: comp,
-          description: desc,
-          type,
-          amount,
-          category
-        });
+        await updateEntry(state.ownerId, editingId, { date, competenceMonth: comp, description: desc, type, amount, category });
         toast("Atualizado");
       } else {
-        await insertEntry(state.ownerId, {
-          date,
-          competenceMonth: comp,
-          description: desc,
-          type,
-          amount,
-          category
-        });
+        await insertEntry(state.ownerId, { date, competenceMonth: comp, description: desc, type, amount, category });
         toast("Adicionado");
       }
       clearForm();
@@ -926,9 +777,6 @@
     }
   }
 
-  // =========================
-  // Categories UI actions
-  // =========================
   async function addCategoryUI() {
     const raw = $("newCat").value.trim();
     if (!state.ownerId) return toast("Faça login.");
@@ -949,8 +797,7 @@
 
   async function resetCategoriesUI() {
     if (!state.ownerId) return toast("Faça login.");
-    if (!confirm("Restaurar categorias padrão? Isso recriará as categorias padrão na nuvem (não apaga lançamentos).")) return;
-
+    if (!confirm("Restaurar categorias padrão? Isso garantirá as categorias padrão na nuvem (não apaga lançamentos).")) return;
     try {
       await ensureDefaultCategories(state.ownerId);
       toast("Categorias padrão garantidas");
@@ -961,15 +808,8 @@
     }
   }
 
-  // =========================
-  // Backup JSON (local)
-  // =========================
   function exportJSONLocal() {
-    const payload = {
-      exportedAt: new Date().toISOString(),
-      categories: state.categories,
-      entries: state.entries
-    };
+    const payload = { exportedAt: new Date().toISOString(), categories: state.categories, entries: state.entries };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -989,8 +829,7 @@
         const entries = Array.isArray(parsed.entries) ? parsed.entries : [];
 
         const existing = new Set(state.categories.map(c => normalizeText(c)));
-        const toInsertCats = cats
-          .filter(c => c && !existing.has(normalizeText(c)))
+        const toInsertCats = cats.filter(c => c && !existing.has(normalizeText(c)))
           .map(name => ({ owner_user_id: state.ownerId, name }));
 
         if (toInsertCats.length) {
@@ -1008,13 +847,11 @@
           category: e.category || "A classificar"
         }));
 
-        if (toInsertEntries.length) {
-          const chunkSize = 500;
-          for (let i = 0; i < toInsertEntries.length; i += chunkSize) {
-            const chunk = toInsertEntries.slice(i, i + chunkSize);
-            const { error } = await sb.from("entries").insert(chunk);
-            if (error) throw error;
-          }
+        const chunkSize = 500;
+        for (let i = 0; i < toInsertEntries.length; i += chunkSize) {
+          const chunk = toInsertEntries.slice(i, i + chunkSize);
+          const { error } = await sb.from("entries").insert(chunk);
+          if (error) throw error;
         }
 
         toast("Importação concluída");
@@ -1027,9 +864,6 @@
     reader.readAsText(file);
   }
 
-  // =========================
-  // Import TXT
-  // =========================
   function parsePtBrNumber(raw) {
     const s = (raw || "").toString().trim();
     const normalized = s.replace(/\s/g, "").replace(/\./g, "").replace(",", ".");
@@ -1087,10 +921,7 @@
           });
         }
 
-        if (!rows.length) {
-          toast("Nada para importar");
-          return;
-        }
+        if (!rows.length) { toast("Nada para importar"); return; }
 
         const chunkSize = 500;
         for (let i = 0; i < rows.length; i += chunkSize) {
@@ -1110,9 +941,6 @@
     reader.readAsText(file);
   }
 
-  // =========================
-  // Filters
-  // =========================
   function clearFilters() {
     $("fComp").value = "";
     $("fTipo").value = "";
@@ -1126,12 +954,8 @@
     renderTable();
   }
 
-  // =========================
-  // Sync / Login flow
-  // =========================
   async function hardSync() {
     if (!state.ownerId) return;
-
     $("syncBtn").disabled = true;
     try {
       await ensureDefaultCategories(state.ownerId);
@@ -1178,33 +1002,24 @@
 
   function setupRealtime() {
     if (realtimeChannel) return;
-
-    realtimeChannel = supabase
+    realtimeChannel = sb
       .channel("entries_changes")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "entries", filter: `owner_user_id=eq.${state.ownerId}` },
-        async () => {
-          await hardSync();
-        }
+        async () => { await hardSync(); }
       )
       .subscribe((status) => console.log("Realtime:", status));
   }
 
-  // =========================
-  // Events
-  // =========================
+  // -------- Events --------
   $("loginBtn").addEventListener("click", async () => {
     const email = $("loginEmail").value.trim();
     const password = $("loginPass").value;
-
     if (!email || !password) return toast("Informe e-mail e senha.");
 
     const { error } = await sb.auth.signInWithPassword({ email, password });
-    if (error) {
-      console.error(error);
-      return toast("Falha no login");
-    }
+    if (error) { console.error(error); return toast("Falha no login"); }
 
     toast("Login ok");
     const user = await getSessionUser();
