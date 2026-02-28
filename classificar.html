@@ -82,9 +82,10 @@
 
 <script>
   // ====== CONFIGURE AQUI ======
-  const SUPABASE_URL = "https://fvkngakqturopbbbjaqk.supabase.co";
+  const SUPABASE_URL = "https://fvkngakqturoppbbjaqk.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2a25nYWtxdHVyb3BwYmJqYXFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwOTI5NjEsImV4cCI6MjA4NzY2ODk2MX0.XeqS-MnYyIZWGSP5H-MDMIDvCU-_UsqSpfJe7WadiTA";
 
+  // Supabase client (usa "sb" para não conflitar com nada)
   const supabaseLib =
     (window.supabase && typeof window.supabase.createClient === "function" && window.supabase) ||
     (window.supabaseJs && typeof window.supabaseJs.createClient === "function" && window.supabaseJs) ||
@@ -95,7 +96,7 @@
     throw new Error("Supabase library not found");
   }
 
-  const supabase = supabaseLib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const sb = supabaseLib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   const $ = (id) => document.getElementById(id);
 
@@ -119,12 +120,12 @@
   function escapeAttr(s) { return escapeHtml(s).replaceAll('"','&quot;'); }
 
   async function getOwnerId() {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await sb.auth.getUser();
     return user ? user.id : null;
   }
 
   async function fetchCategories(ownerId) {
-    const { data, error } = await supabase
+    const { data, error } = await sb
       .from("categories")
       .select("name")
       .eq("owner_user_id", ownerId)
@@ -139,7 +140,7 @@
   }
 
   async function fetchToClassify(ownerId) {
-    const { data, error } = await supabase
+    const { data, error } = await sb
       .from("entries")
       .select("id,date,competence_month,description,type,amount,category")
       .eq("owner_user_id", ownerId)
@@ -220,7 +221,7 @@
         btn.disabled = true;
         btn.textContent = "Salvando...";
 
-        const { error } = await supabase
+        const { error } = await sb
           .from("entries")
           .update({ category: newCat })
           .eq("id", id)
@@ -237,7 +238,7 @@
 
         toast("Classificado!");
         btn.closest(".item").remove();
-        $("count").textContent = String(Number($("count").textContent) - 1);
+        $("count").textContent = String(Math.max(0, Number($("count").textContent) - 1));
       });
     });
   }
@@ -249,7 +250,7 @@
 
     if (!email || !password) return toast("Informe e-mail e senha.");
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await sb.auth.signInWithPassword({ email, password });
     if (error) {
       console.error(error);
       toast("Falha no login");
@@ -260,14 +261,14 @@
   });
 
   $("logoutBtn").addEventListener("click", async () => {
-    await supabase.auth.signOut();
+    await sb.auth.signOut();
     toast("Saiu");
     refresh();
   });
 
   $("reloadBtn").addEventListener("click", refresh);
 
-  supabase.auth.onAuthStateChange(() => refresh());
+  sb.auth.onAuthStateChange(() => refresh());
 
   refresh();
 </script>
